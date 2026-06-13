@@ -1,12 +1,30 @@
 
 import mongoose from "mongoose";
+import type { Document, Types } from "mongoose"
 import bcrypt from "bcrypt"
 import jwt from "jsonwebtoken"
 import type { Secret, SignOptions } from "jsonwebtoken"
 import { loginType } from "../constants.js"
 
+export interface IUser extends Document
+{
+    firstname: string,
+    lastname: string,
+    email: string,
+    password: string,
+    googleId: string,
+    verificationCode: string,
+    verificationCodeExpiry: Date,
+    isVerified: boolean,
+    avatar: string,
+    loginType: loginType,
+    refreshToken: string,
+    createdAt: Date,
+    updatedAt: Date
+}
 
-const userSchema = new mongoose.Schema(
+
+const userSchema = new mongoose.Schema<IUser>(
     {
         firstname: {
             type: String,
@@ -44,8 +62,7 @@ const userSchema = new mongoose.Schema(
         },
         verificationCodeExpiry: {
             type: Date,
-            trim: true,
-            default: ""
+            default: null
         },
         isVerified: {
             type: Boolean,
@@ -112,4 +129,4 @@ userSchema.methods.generateRefreshToken = function ()
     )
 }
 
-export const User = mongoose.model( "User", userSchema )
+export const User = mongoose.model<IUser>( "User", userSchema )
