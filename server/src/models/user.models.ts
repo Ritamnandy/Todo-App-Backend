@@ -14,13 +14,16 @@ export interface IUser extends Document
     password: string,
     googleId: string,
     verificationCode: string,
-    verificationCodeExpiry: Date,
+    verificationCodeExpiry: Date|null,
     isVerified: boolean,
     avatar: string,
     loginType: loginType,
     refreshToken: string,
     createdAt: Date,
-    updatedAt: Date
+    updatedAt: Date,
+    comparePassword: ( password: string ) => Promise<boolean>,
+    generateAccessToken: () => string,
+    generateRefreshToken: () => string
 }
 
 
