@@ -4,7 +4,7 @@ import type { Request, Response, NextFunction } from "express";
 type Handler = (
     req: Request,
     res: Response,
-    next?: NextFunction
+    next: NextFunction
 ) => Promise<unknown>;
 
 export const asyncHandler = ( requestHandler: Handler ) =>

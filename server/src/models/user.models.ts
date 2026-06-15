@@ -14,7 +14,7 @@ export interface IUser extends Document
     password: string,
     googleId: string,
     verificationCode: string,
-    verificationCodeExpiry: Date|null,
+    verificationCodeExpiry: Date | null,
     isVerified: boolean,
     avatar: string,
     loginType: loginType,
@@ -96,9 +96,9 @@ userSchema.pre( "save", async function ()
     this.password = await bcrypt.hash( this.password, 10 )
 } )
 
-userSchema.methods.comparePassword = async function ( password: string )
+userSchema.methods.comparePassword = function ( password: string )
 {
-    return await bcrypt.compare( password, this.password )
+    return bcrypt.compare( password, this.password )
 }
 
 
@@ -108,8 +108,8 @@ userSchema.methods.generateAccessToken = function ()
         {
             _id: this._id,
             email: this.email,
-            loginType: this.loginType,
-            isVerified: this.isVerified
+            firstname: this.firstname,
+            lastname: this.lastname
         },
         process.env.JWT_TOKEN_SECRET as Secret,
         {
