@@ -3,14 +3,14 @@ class ApiError extends Error
 {
     private status: number;
     message: string;
-    private error: string[];
+    private error: (string|object)[];
     private data: null;
     private success: boolean;
     stack?: string;
     constructor (
         status: number,
         message: string,
-        error: string[] = [ "Something went wrong" ],
+        error: (string|object)[] = [ "Something went wrong" ],
         stack: string = "" )
     {
         super( message );
