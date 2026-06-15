@@ -25,3 +25,6 @@ USER node
 EXPOSE 8000
 
 CMD ["node", "dist/index.js"]
+
+# docker build -t todo-app-backend . 
+#  this dockerfile i used for learning purpose
