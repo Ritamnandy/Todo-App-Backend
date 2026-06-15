@@ -1,4 +1,5 @@
 
+import type { Request, Response } from "express";
 import { User } from "../models/user.models.js";
 import type { IUser } from "../models/user.models.js";
 import { ApiError } from "../utils/apierror.js";
@@ -7,6 +8,8 @@ import { asyncHandler } from "../utils/asynchandler.js";
 import { cloudinaryUpload } from "../utils/cloudinary.upload.js";
 import { sendVerifyEmailMail, forgotPasswordMail } from "../utils/mail.js";
 import crypto from "node:crypto"
+import jwt from "jsonwebtoken"
+import type { Secret, JwtPayload } from "jsonwebtoken"
 
 const generateVerificationCode = (): string =>
 {
@@ -189,8 +192,185 @@ const verifyEmail = asyncHandler( async ( req, res ) =>
     res.status( 200 )
         .cookie( "accessToken", accessToken, Options )
         .cookie( "refreshToken", refreshToken, Options )
-        .json( new ApiResponse( 200, "User verified successfully", [ "User verified successfully", { accessT: accessToken, refreshT: refreshToken, user: createdUser } ] ) )
+        .json( new ApiResponse( 200, "User verified successfully", [ "User verified successfully", { accessToken: accessToken, refreshToken: refreshToken, user: createdUser } ] ) )
 } )
+
+
+// +++++ login user ++++++
+interface loginUserBody
+{
+    email: string,
+    password: string
+}
+
+
+const loginUser = asyncHandler( async ( req, res ) =>
+{
+    const { email, password } = req.body as loginUserBody
+    if ( !email || !password )
+    {
+        throw new ApiError( 400, "All fields are required", [ "All fields are required" ] )
+    }
+    if ( email === "" || password === "" )
+    {
+        throw new ApiError( 400, "All fields are required", [ "All fields are required" ] )
+    }
+    const user: IUser | null = await User.findOne( { email } )
+    if ( !user )
+    {
+        throw new ApiError( 404, "User not found", [ "User not found" ] )
+    }
+    if ( !user.isVerified )
+    {
+        throw new ApiError( 400, "User not verified", [ "User not verified" ] )
+    }
+    const isMatch = user.comparePassword( password )
+    if ( !isMatch )
+    {
+        throw new ApiError( 400, "Invalid credentials", [ "Invalid credentials" ] )
+    }
+    const { accessToken, refreshToken } = await generateTokenPair( user )
+    if ( !accessToken || !refreshToken )
+    {
+        throw new ApiError( 500, "Token not generated", [ "Token not generated" ] )
+    }
+    const createdUser: IUser | null = await User.findById( user._id ).select( "-password -verificationCode -verificationCodeExpiry -refreshToken -googleId -isVerified" )
+    if ( !createdUser )
+    {
+        throw new ApiError( 404, "User not found", [ "User not found" ] )
+    }
+    res.status( 200 )
+        .cookie( "accessToken", accessToken, Options )
+        .cookie( "refreshToken", refreshToken, Options )
+        .json( new ApiResponse( 200, "User logged in successfully", [ "User logged in successfully", { accessToken: accessToken, refreshToken: refreshToken, user: createdUser } ] ) )
+} )
+
+
+
+// +++ logout user +++++
+
+const logoutUser = asyncHandler( async ( req, res ) =>
+{
+    const user: IUser | null = req.user as IUser
+    if ( !user )
+    {
+        throw new ApiError( 401, "Unauthorized request", [ "Unauthorized request,\tUser not found" ] )
+    }
+    user.refreshToken = " "
+    await user.save( { validateBeforeSave: false } )
+    res.status( 200 )
+        .clearCookie( "accessToken" )
+        .clearCookie( "refreshToken" )
+        .json( new ApiResponse( 200, "User logged out successfully", [ "User logged out successfully" ] ) )
+} )
+
+
+//  +++++ set avatar ++++++
+
+interface setAvatarBody extends Request
+{
+    file?: {
+        path: string;
+        filename: string;
+        mimetype: string;
+        size: number;
+    };
+}
+
+
+const setAvatar = asyncHandler( async ( req, res ) =>
+{
+    const user: IUser | null = req.user as IUser;
+    const reqWithFile = req as setAvatarBody;
+
+    const imageLocalPath = reqWithFile.file?.path ?? null;
+    if ( !imageLocalPath )
+    {
+        throw new ApiError( 400, "Image not found", [ "Image is required" ] )
+    }
+    if ( !user )
+    {
+        throw new ApiError( 401, "Unauthorized request", [ "Unauthorized request,\tUser not found" ] )
+    }
+    const avatar = await cloudinaryUpload( imageLocalPath )
+    if ( !avatar )
+    {
+        throw new ApiError( 500, "Image not uploaded", [ "Image not uploaded" ] )
+    }
+    user.avatar = avatar
+    await user.save( { validateBeforeSave: false } )
+    res.status( 200 )
+        .json( new ApiResponse( 200, "Image uploaded successfully", [ "Image uploaded successfully", { avatar: avatar } ] ) )
+} )
+
+// +++++ refresh access token +++++
+
+interface refreshTokenBody
+{
+    refreshToken: string
+}
+interface CustomJwtPayload extends JwtPayload
+{
+    _id: string,
+    email: string,
+}
+const refreshAccessToken = asyncHandler( async ( req, res ) =>
+{
+    const { refreshToken: Token } = ( req.body || req.cookies || req.headers ) as refreshTokenBody
+    if ( !Token )
+    {
+        throw new ApiError( 401, "Token not found", [ "Token not found" ] )
+    }
+    const decoded = jwt.verify( Token, process.env.JWT_TOKEN_SECRET as Secret ) as CustomJwtPayload
+    const user = await User.findById( decoded?._id )
+    if ( !user )
+    {
+        throw new ApiError( 401, "Unauthorized request", [ "Unauthorized request,\tUser not found" ] )
+    }
+    const { accessToken, refreshToken } = await generateTokenPair( user )
+    if ( !accessToken || !refreshToken )
+    {
+        throw new ApiError( 500, "Token not generated", [ "Token not generated" ] )
+    }
+    res.status( 200 )
+        .cookie( "accessToken", accessToken, Options )
+        .cookie( "refreshToken", refreshToken, Options )
+        .json( new ApiResponse( 200, "Access token refreshed successfully", [ "Access token refreshed successfully", { accessToken: accessToken, refreshToken: refreshToken } ] ) )
+} )
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+// +++++++ forget password +++++++
+
+const forgetPassword = asyncHandler( async ( req, res ) =>
+{
+
+} )
+
 
 
 
@@ -199,4 +379,9 @@ export
     registerUser,
     resendVerificationCode,
     verifyEmail,
+    loginUser,
+    logoutUser,
+    setAvatar,
+    forgetPassword,
+    refreshAccessToken
 }
