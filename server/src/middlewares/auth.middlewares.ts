@@ -23,7 +23,7 @@ const verifyJWT = asyncHandler( async ( req, res, next ) =>
             throw new ApiError( 401, "Unauthorized request", [ "Access token not found" ] )
         }
         const { _id: id } = jwt.verify( token, process.env.JWT_TOKEN_SECRET as Secret ) as CustomJwtPayload
-        const user = await User.findById( id ).select( "-password -verificationCode -verificationCodeExpiry -refreshToken -googleId -isVerified" )
+        const user = await User.findById( id )
 
         if ( !user )
         {
