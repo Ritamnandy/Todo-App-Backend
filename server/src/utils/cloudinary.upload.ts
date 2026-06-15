@@ -16,8 +16,12 @@ cloudinary.config( {
     secure: true
 } )
 
-const cloudinaryUpload = async ( filePath: string ) =>
+const cloudinaryUpload = async ( filePath: string | null ) =>
 {
+    if ( !filePath )
+    {
+        return null
+    }
     try
     {
         const response = cloudinary.uploader
@@ -37,6 +41,7 @@ const cloudinaryUpload = async ( filePath: string ) =>
             console.error( error );
             fs.unlinkSync( filePath )
         }
+        return null
     }
 }
 
