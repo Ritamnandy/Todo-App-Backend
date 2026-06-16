@@ -1,0 +1,35 @@
+
+version: '1.0'
+
+services:
+  server:
+    build: .
+    ports:
+      - "3000:3000"
+    environment:
+      - PORT=3000
+      - NODE_ENV=development
+    volumes:
+      - .:/app
+    command: ["npm", "run", "dev"]
+
+  redis:
+    image: redis:latest
+    container_name: redis-server
+    volumes:
+      - redis-data:/data
+    ports:
+      - "6379:6379"
+
+  mongo:
+    image: mongo:latest
+    container_name: mongodb
+    volumes:
+      - mongo-data:/data/db
+    ports:
+      - "27017:27017"
+
+
+volumes:
+  redis-data:
+  mongo-data:      
