@@ -34,6 +34,12 @@ app.use( passport.initialize() )
 app.use( passport.session() )
 
 
+import userRoute from "./routes/user.routes.js"
+
+app.use( "/api/v1/auth", userRoute )
+
+
+
 
 
 export { app }

@@ -269,12 +269,7 @@ const logoutUser = asyncHandler( async ( req, res ) =>
 
 interface setAvatarBody extends Request
 {
-    file?: {
-        path: string;
-        filename: string;
-        mimetype: string;
-        size: number;
-    };
+    file?: Express.Multer.File
 }
 
 
@@ -283,7 +278,7 @@ const setAvatar = asyncHandler( async ( req, res ) =>
     const user: IUser | null = req.user as IUser;
     const reqWithFile = req as setAvatarBody;
 
-    const imageLocalPath = reqWithFile.file?.path ?? null;
+    const imageLocalPath = reqWithFile.file?.path;
     if ( !imageLocalPath )
     {
         throw new ApiError( 400, "Image not found", [ "Image is required" ] )
@@ -339,7 +334,12 @@ const refreshAccessToken = asyncHandler( async ( req, res ) =>
 } )
 
 
+// ++++ social login +++++++
 
+const socialLogin = asyncHandler( async ( req, res ) =>
+{
+    res.send( "social login" )
+} )
 
 
 
@@ -368,7 +368,7 @@ const refreshAccessToken = asyncHandler( async ( req, res ) =>
 
 const forgetPassword = asyncHandler( async ( req, res ) =>
 {
-
+    res.send( "forget password" )
 } )
 
 
@@ -383,5 +383,6 @@ export
     logoutUser,
     setAvatar,
     forgetPassword,
-    refreshAccessToken
+    refreshAccessToken,
+    socialLogin
 }
