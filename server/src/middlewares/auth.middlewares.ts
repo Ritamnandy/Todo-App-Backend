@@ -17,12 +17,12 @@ const verifyJWT = asyncHandler( async ( req, res, next ) =>
 {
     try
     {
-        const token = req.cookies.accessToken || req.header( "Authorization" )?.replace( " Bearer ", " " ) as string
+        const token = req.cookies.accessToken ||req.headers.authorization || req.header( "Authorization" )?.replace( " Bearer ", " " ) as string
         if ( !token )
         {
-            throw new ApiError( 401, "Unauthorized request", [ "Access token not found" ] )
+            return res.json( new ApiError( 401, "Unauthorized request", [ "Access token not found" ] ) )
         }
-        const { _id: id } = jwt.verify( token, process.env.JWT_TOKEN_SECRET as Secret ) as CustomJwtPayload
+        const { _id: id } = jwt.verify( token, process.env.JWT_TOKEN_SECRET as string ) as CustomJwtPayload
         const user = await User.findById( id )
 
         if ( !user )

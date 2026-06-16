@@ -10,6 +10,7 @@ import { sendVerifyEmailMail, forgotPasswordMail } from "../utils/mail.js";
 import crypto from "node:crypto"
 import jwt from "jsonwebtoken"
 import type { Secret, JwtPayload } from "jsonwebtoken"
+import { loginType } from "../constants.js";
 
 const generateVerificationCode = (): string =>
 {
@@ -63,7 +64,8 @@ interface registerUserBody
     firstname: string,
     lastname: string,
     email: string,
-    password: string
+    password: string,
+    logintype: loginType
 }
 
 const registerUser = asyncHandler( async ( req, res ) =>
@@ -71,16 +73,16 @@ const registerUser = asyncHandler( async ( req, res ) =>
     const { firstname, lastname, email, password } = req.body as registerUserBody
     if ( !firstname || !lastname || !email || !password )
     {
-        throw new ApiError( 400, "All fields are required", [ "All fields are required" ] )
+        return res.json( new ApiError( 400, "All fields are required", [ "All fields are required" ] ) )
     }
     if ( firstname === "" || lastname === "" || email === "" || password === "" )
     {
-        throw new ApiError( 400, "All fields are required", [ "All fields are required" ] )
+        return res.json( new ApiError( 400, "All fields are required", [ "All fields are required" ] ) )
     }
     const user: IUser | null = await User.findOne( { email } )
     if ( user )
     {
-        throw new ApiError( 400, "User already exists", [ "User already exists" ] )
+        return res.json( new ApiError( 400, "User already exists", [ "User already exists" ] ) )
     }
 
     const verificationCode = generateVerificationCode()
@@ -94,10 +96,11 @@ const registerUser = asyncHandler( async ( req, res ) =>
         password,
         verificationCode,
         verificationCodeExpiry,
+        loginType: loginType.EMAIL_PASSWORD
     } )
     if ( !createdUser )
     {
-        throw new ApiError( 500, "User not created", [ "User not created" ] )
+        return res.json( new ApiError( 500, "User not created", [ "User not created" ] ) )
     }
     res.status( 201 )
         .json( new ApiResponse( 201, "User created successfully", [ "User created successfully, check your email to verify your account" ] ) )
@@ -113,16 +116,16 @@ const resendVerificationCode = asyncHandler( async ( req, res ) =>
     const { email } = req.body as resendEmailBody
     if ( !email )
     {
-        throw new ApiError( 400, "Email is required", [ "Email is required" ] )
+        return res.json( new ApiError( 400, "Email is required", [ "Email is required" ] ) )
     }
     if ( email === "" )
     {
-        throw new ApiError( 400, "Email is required", [ "Email is required" ] )
+        return res.json( new ApiError( 400, "Email is required", [ "Email is required" ] ) )
     }
     const user: IUser | null = await User.findOne( { email } )
     if ( !user )
     {
-        throw new ApiError( 404, "User not found", [ "User not found" ] )
+        return res.json( new ApiError( 404, "User not found", [ "User not found" ] ) )
     }
     const verificationCode = generateVerificationCode()
     const verificationCodeExpiry = getExpiryTime()
@@ -146,48 +149,50 @@ interface verifyEmailBody
 const verifyEmail = asyncHandler( async ( req, res ) =>
 {
     const { email, code } = req.body as verifyEmailBody
+    console.log(code);
+    
     if ( !email || !code )
     {
-        throw new ApiError( 400, "All fields are required", [ "All fields are required" ] )
+        return res.json( new ApiError( 400, "All fields are required", [ "All fields are required" ] ) )
     }
     if ( email === "" || code === "" )
     {
-        throw new ApiError( 400, "All fields are required", [ "All fields are required" ] )
+        return res.json( new ApiError( 400, "All fields are required", [ "All fields are required" ] ) )
     }
     const user: IUser | null = await User.findOne( { email } )
     if ( !user )
     {
-        throw new ApiError( 404, "User not found", [ "User not found" ] )
+        return res.json( new ApiError( 404, "User not found", [ "User not found" ] ) )
     }
     if ( user.isVerified )
     {
-        throw new ApiError( 400, "User already verified", [ "User already verified" ] )
+        return res.json( new ApiError( 400, "User already verified", [ "User already verified" ] ) )
     }
     if ( user.verificationCode !== code )
     {
-        throw new ApiError( 400, "Invalid verification code", [ "Invalid verification code" ] )
+        return res.json( new ApiError( 400, "Invalid verification code", [ "Invalid verification code" ] ) )
     }
     if ( user.verificationCodeExpiry === null )
     {
-        throw new ApiError( 400, "Verification code expired", [ "Verification code expired" ] )
+        return res.json( new ApiError( 400, "Verification code expired", [ "Verification code expired" ] ) )
     }
     if ( user.verificationCodeExpiry < new Date() )
     {
-        throw new ApiError( 400, "Verification code expired", [ "Verification code expired" ] )
+        return res.json( new ApiError( 400, "Verification code expired", [ "Verification code expired" ] ) )
     }
     user.isVerified = true
     user.verificationCode = ""
     user.verificationCodeExpiry = null
-    await user.save( { validateBeforeSave: false } )
     const { accessToken, refreshToken } = await generateTokenPair( user )
+    await user.save( { validateBeforeSave: false } )
     if ( !accessToken || !refreshToken )
     {
-        throw new ApiError( 500, "Token not generated", [ "Token not generated" ] )
+        return res.json( new ApiError( 500, "Token not generated", [ "Token not generated" ] ) )
     }
     const createdUser: IUser | null = await User.findById( user._id ).select( "-password -verificationCode -verificationCodeExpiry -refreshToken -googleId -isVerified" )
     if ( !createdUser )
     {
-        throw new ApiError( 404, "User not found", [ "User not found" ] )
+        return res.json( new ApiError( 404, "User not found", [ "User not found" ] ) )
     }
     res.status( 200 )
         .cookie( "accessToken", accessToken, Options )
@@ -209,35 +214,35 @@ const loginUser = asyncHandler( async ( req, res ) =>
     const { email, password } = req.body as loginUserBody
     if ( !email || !password )
     {
-        throw new ApiError( 400, "All fields are required", [ "All fields are required" ] )
+        return res.json( new ApiError( 400, "All fields are required", [ "All fields are required" ] ) )
     }
     if ( email === "" || password === "" )
     {
-        throw new ApiError( 400, "All fields are required", [ "All fields are required" ] )
+        return res.json( new ApiError( 400, "All fields are required", [ "All fields are required" ] ) )
     }
     const user: IUser | null = await User.findOne( { email } )
     if ( !user )
     {
-        throw new ApiError( 404, "User not found", [ "User not found" ] )
+        return res.json( new ApiError( 404, "User not found", [ "User not found" ] ) )
     }
     if ( !user.isVerified )
     {
-        throw new ApiError( 400, "User not verified", [ "User not verified" ] )
+        return res.json( new ApiError( 400, "User not verified", [ "User not verified" ] ) )
     }
     const isMatch = user.comparePassword( password )
     if ( !isMatch )
     {
-        throw new ApiError( 400, "Invalid credentials", [ "Invalid credentials" ] )
+        return res.json( new ApiError( 400, "Invalid credentials", [ "Invalid credentials" ] ) )
     }
     const { accessToken, refreshToken } = await generateTokenPair( user )
     if ( !accessToken || !refreshToken )
     {
-        throw new ApiError( 500, "Token not generated", [ "Token not generated" ] )
+        return res.json( new ApiError( 500, "Token not generated", [ "Token not generated" ] ) )
     }
     const createdUser: IUser | null = await User.findById( user._id ).select( "-password -verificationCode -verificationCodeExpiry -refreshToken -googleId -isVerified" )
     if ( !createdUser )
     {
-        throw new ApiError( 404, "User not found", [ "User not found" ] )
+        return res.json( new ApiError( 404, "User not found", [ "User not found" ] ) )
     }
     res.status( 200 )
         .cookie( "accessToken", accessToken, Options )
@@ -254,7 +259,7 @@ const logoutUser = asyncHandler( async ( req, res ) =>
     const user: IUser | null = req.user as IUser
     if ( !user )
     {
-        throw new ApiError( 401, "Unauthorized request", [ "Unauthorized request,\tUser not found" ] )
+        return res.json( new ApiError( 401, "Unauthorized request", [ "Unauthorized request,\tUser not found" ] ) )
     }
     user.refreshToken = " "
     await user.save( { validateBeforeSave: false } )
@@ -281,16 +286,16 @@ const setAvatar = asyncHandler( async ( req, res ) =>
     const imageLocalPath = reqWithFile.file?.path;
     if ( !imageLocalPath )
     {
-        throw new ApiError( 400, "Image not found", [ "Image is required" ] )
+        return res.json( new ApiError( 400, "Image not found", [ "Image is required" ] ) )
     }
     if ( !user )
     {
-        throw new ApiError( 401, "Unauthorized request", [ "Unauthorized request,\tUser not found" ] )
+        return res.json( new ApiError( 401, "Unauthorized request", [ "Unauthorized request,\tUser not found" ] ) )
     }
     const avatar = await cloudinaryUpload( imageLocalPath )
     if ( !avatar )
     {
-        throw new ApiError( 500, "Image not uploaded", [ "Image not uploaded" ] )
+        return res.json( new ApiError( 500, "Image not uploaded", [ "Image not uploaded" ] ) )
     }
     user.avatar = avatar
     await user.save( { validateBeforeSave: false } )
@@ -314,18 +319,18 @@ const refreshAccessToken = asyncHandler( async ( req, res ) =>
     const { refreshToken: Token } = ( req.body || req.cookies || req.headers ) as refreshTokenBody
     if ( !Token )
     {
-        throw new ApiError( 401, "Token not found", [ "Token not found" ] )
+        return res.json( new ApiError( 401, "Token not found", [ "Token not found" ] ) )
     }
-    const decoded = jwt.verify( Token, process.env.JWT_TOKEN_SECRET as Secret ) as CustomJwtPayload
+    const decoded = jwt.verify( Token, process.env.REFRESH_TOKEN_SECRET as Secret ) as CustomJwtPayload
     const user = await User.findById( decoded?._id )
     if ( !user )
     {
-        throw new ApiError( 401, "Unauthorized request", [ "Unauthorized request,\tUser not found" ] )
+        return res.json( new ApiError( 401, "Unauthorized request", [ "Unauthorized request,\tUser not found" ] ) )
     }
     const { accessToken, refreshToken } = await generateTokenPair( user )
     if ( !accessToken || !refreshToken )
     {
-        throw new ApiError( 500, "Token not generated", [ "Token not generated" ] )
+        return res.json( new ApiError( 500, "Token not generated", [ "Token not generated" ] ) )
     }
     res.status( 200 )
         .cookie( "accessToken", accessToken, Options )

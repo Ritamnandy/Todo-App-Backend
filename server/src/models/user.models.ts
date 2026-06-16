@@ -101,6 +101,11 @@ userSchema.methods.comparePassword = function ( password: string )
     return bcrypt.compare( password, this.password )
 }
 
+const accessTokenSecret = process.env.JWT_TOKEN_SECRET as string
+const accessTokenExpiry = process.env.JWT_TOKEN_EXPIRES_IN as string
+const refreshTokenSecret = process.env.REFRESH_TOKEN_SECRET as string
+const refreshTokenExpiry = process.env.REFRESH_TOKEN_EXPIRES_IN as string
+
 
 userSchema.methods.generateAccessToken = function ()
 {
@@ -111,9 +116,9 @@ userSchema.methods.generateAccessToken = function ()
             firstname: this.firstname,
             lastname: this.lastname
         },
-        process.env.JWT_TOKEN_SECRET as Secret,
+        accessTokenSecret as Secret,
         {
-            expiresIn: process.env.JWT_TOKEN_EXPIRES_IN
+            expiresIn: accessTokenExpiry
         } as SignOptions
     )
 }
@@ -125,9 +130,9 @@ userSchema.methods.generateRefreshToken = function ()
             _id: this._id,
             email: this.email
         },
-        process.env.JWT_REFRESH_TOKEN_SECRET as Secret,
+        refreshTokenSecret as Secret,
         {
-            expiresIn: process.env.JWT_REFRESH_TOKEN_EXPIRES_IN
+            expiresIn: refreshTokenExpiry
         } as SignOptions
     )
 }
