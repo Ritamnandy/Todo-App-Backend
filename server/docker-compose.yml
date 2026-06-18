@@ -1,6 +1,4 @@
 
-version: '1.0'
-
 services:
   server:
     build: .
@@ -14,16 +12,16 @@ services:
     command: ["npm", "run", "dev"]
 
   redis:
-    image: redis:latest
-    container_name: redis-server
+    image: redis:7-alpine
+    container_name: redis-todo
     volumes:
       - redis-data:/data
     ports:
       - "6379:6379"
 
   mongo:
-    image: mongo:latest
-    container_name: mongodb
+    image: mongo:7
+    container_name: mongo-todo
     volumes:
       - mongo-data:/data/db
     ports:
