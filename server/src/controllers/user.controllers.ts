@@ -7,21 +7,22 @@ import { ApiResponse } from "../utils/apiresponse.js";
 import { asyncHandler } from "../utils/asynchandler.js";
 import { cloudinaryUpload } from "../utils/cloudinary.upload.js";
 import { sendVerifyEmailMail, forgotPasswordMail } from "../utils/mail.js";
-import crypto from "node:crypto"
 import jwt from "jsonwebtoken"
 import type { Secret, JwtPayload } from "jsonwebtoken"
 import { loginType } from "../constants.js";
+import { redis } from "../db/redis.db.js";
 
-const generateVerificationCode = (): string =>
+
+const generateOtp = (): string =>
 {
-    return crypto.randomBytes( 3 ).toString( "hex" );
+    return Math.floor( 100000 + Math.random() * 900000 ).toString();
 }
-const getExpiryTime = (): Date =>
+
+function getOtpKey ( email: string ): string
 {
-    const date = new Date()
-    date.setMinutes( date.getMinutes() + 5 )
-    return date
+    return `otp:${ email }`
 }
+
 const generateTokenPair = async ( Id: IUser ):
     Promise<{ accessToken: string | null, refreshToken: string | null }> =>
 {
@@ -85,17 +86,15 @@ const registerUser = asyncHandler( async ( req, res ) =>
         return res.json( new ApiError( 400, "User already exists", [ "User already exists" ] ) )
     }
 
-    const verificationCode = generateVerificationCode()
-    const verificationCodeExpiry = getExpiryTime()
+    const otp: string = generateOtp()
+    await redis.set( getOtpKey( email ), otp, "EX", 60 * 5 )
     const userName = `${ firstname } ${ lastname }`
-    await sendVerifyEmailMail( email, userName, verificationCode )
+    await sendVerifyEmailMail( email, userName, otp )
     const createdUser: IUser = await User.create( {
         firstname,
         lastname,
         email,
         password,
-        verificationCode,
-        verificationCodeExpiry,
         loginType: loginType.EMAIL_PASSWORD
     } )
     if ( !createdUser )
@@ -127,18 +126,16 @@ const resendVerificationCode = asyncHandler( async ( req, res ) =>
     {
         return res.json( new ApiError( 404, "User not found", [ "User not found" ] ) )
     }
-    const verificationCode = generateVerificationCode()
-    const verificationCodeExpiry = getExpiryTime()
+    const otp: string = generateOtp()
+    await redis.set( getOtpKey( email ), otp, "EX", 60 * 5 )
     const userName = `${ user.firstname } ${ user.lastname }`
-    await sendVerifyEmailMail( email, userName, verificationCode )
-    user.verificationCode = verificationCode
-    user.verificationCodeExpiry = verificationCodeExpiry
+    await sendVerifyEmailMail( email, userName, otp )
     await user.save( { validateBeforeSave: false } )
     res.status( 200 )
         .json( new ApiResponse( 200, "Email sent successfully", [ "Email sent successfully, check your email to verify your account" ] ) )
 } )
 
-/// ++++ verify email ++++++
+/// ++++ verify nigga lol ++++
 
 interface verifyEmailBody
 {
@@ -149,8 +146,8 @@ interface verifyEmailBody
 const verifyEmail = asyncHandler( async ( req, res ) =>
 {
     const { email, code } = req.body as verifyEmailBody
-    console.log(code);
-    
+    console.log( code );
+
     if ( !email || !code )
     {
         return res.json( new ApiError( 400, "All fields are required", [ "All fields are required" ] ) )
@@ -168,21 +165,17 @@ const verifyEmail = asyncHandler( async ( req, res ) =>
     {
         return res.json( new ApiError( 400, "User already verified", [ "User already verified" ] ) )
     }
-    if ( user.verificationCode !== code )
+    const otp: string | null = await redis.get( getOtpKey( email ) )
+    if ( !otp )
     {
-        return res.json( new ApiError( 400, "Invalid verification code", [ "Invalid verification code" ] ) )
+        return res.json( new ApiError( 400, "Invalid code or code has expired", [ "Invalid code or code has expired" ] ) ) 
     }
-    if ( user.verificationCodeExpiry === null )
+    if ( otp !== code )
     {
-        return res.json( new ApiError( 400, "Verification code expired", [ "Verification code expired" ] ) )
+        return res.json( new ApiError( 400, "Invalid code or code has expired", [ "Invalid code or code has expired" ] ) )
     }
-    if ( user.verificationCodeExpiry < new Date() )
-    {
-        return res.json( new ApiError( 400, "Verification code expired", [ "Verification code expired" ] ) )
-    }
+    await redis.del( getOtpKey( email ) )
     user.isVerified = true
-    user.verificationCode = ""
-    user.verificationCodeExpiry = null
     const { accessToken, refreshToken } = await generateTokenPair( user )
     await user.save( { validateBeforeSave: false } )
     if ( !accessToken || !refreshToken )

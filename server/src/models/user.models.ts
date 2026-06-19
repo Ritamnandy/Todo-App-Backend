@@ -58,15 +58,6 @@ const userSchema = new mongoose.Schema<IUser>(
             trim: true,
             default: ""
         },
-        verificationCode: {
-            type: String,
-            trim: true,
-            default: ""
-        },
-        verificationCodeExpiry: {
-            type: Date,
-            default: null
-        },
         isVerified: {
             type: Boolean,
             default: false
