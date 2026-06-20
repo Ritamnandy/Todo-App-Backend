@@ -16,6 +16,7 @@ import
     refreshAccessToken,
     socialLogin
 } from "../controllers/user.controllers.js"
+import { upload } from "../middlewares/multer.middlewares.js";
 import passport from "passport";
 
 
@@ -54,7 +55,7 @@ router.route( "/forget-password" ).post( forgetPassword )
 //secure routes
 
 router.route( "/logout" ).post( verifyJWT, logoutUser )
-router.route( "/set-avatar" ).post( verifyJWT, setAvatar )
+router.route( "/set-avatar" ).post( verifyJWT,upload.single( "avatar" ), setAvatar )
 
 
 

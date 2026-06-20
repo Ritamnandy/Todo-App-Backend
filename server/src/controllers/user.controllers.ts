@@ -167,7 +167,7 @@ const verifyEmail = asyncHandler( async ( req, res ) =>
     const otp: string | null = await redis.get( getOtpKey( email ) )
     if ( !otp )
     {
-        return res.json( new ApiError( 400, "Invalid code or code has expired", [ "Invalid code or code has expired" ] ) ) 
+        return res.json( new ApiError( 400, "Invalid code or code has expired", [ "Invalid code or code has expired" ] ) )
     }
     if ( otp !== code )
     {
@@ -264,18 +264,14 @@ const logoutUser = asyncHandler( async ( req, res ) =>
 
 //  +++++ set avatar ++++++
 
-interface setAvatarBody extends Request
-{
-    file?: Express.Multer.File
-}
 
 
 const setAvatar = asyncHandler( async ( req, res ) =>
 {
     const user: IUser | null = req.user as IUser;
-    const reqWithFile = req as setAvatarBody;
+    const imageLocalPath: string | undefined = req.file?.path;
+    console.log( imageLocalPath );
 
-    const imageLocalPath = reqWithFile.file?.path;
     if ( !imageLocalPath )
     {
         return res.json( new ApiError( 400, "Image not found", [ "Image is required" ] ) )
