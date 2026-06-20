@@ -13,8 +13,6 @@ export interface IUser extends Document
     email: string,
     password: string,
     googleId: string,
-    verificationCode: string,
-    verificationCodeExpiry: Date | null,
     isVerified: boolean,
     avatar: string,
     loginType: loginType,

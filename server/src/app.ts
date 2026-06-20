@@ -8,6 +8,7 @@ import session from "express-session"
 import requestIp from "request-ip"
 import passport from "passport"
 import "./jobs/worker.jobs.js"
+import "./passport/oauth.js"
 const app = express()
 
 app.use( cors( {

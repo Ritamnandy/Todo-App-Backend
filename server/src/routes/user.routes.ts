@@ -38,8 +38,8 @@ router.route( '/google/callback' ).get(
     passport.authenticate( 'google',
         {
             failureRedirect: '/login'
-        }, socialLogin
-    )
+        }
+    ), socialLogin
 )
 
 
@@ -56,7 +56,7 @@ router.route( "/forget-password" ).post( forgetPassword )
 //secure routes
 
 router.route( "/logout" ).post( verifyJWT, logoutUser )
-router.route( "/set-avatar" ).post( verifyJWT,upload.single( "avatar" ), setAvatar )
+router.route( "/set-avatar" ).post( verifyJWT, upload.single( "avatar" ), setAvatar )
 router.route( "/current-user" ).get( verifyJWT, getCurrentUser )
 
 
