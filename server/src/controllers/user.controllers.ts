@@ -146,7 +146,6 @@ interface verifyEmailBody
 const verifyEmail = asyncHandler( async ( req, res ) =>
 {
     const { email, code } = req.body as verifyEmailBody
-    console.log( code );
 
     if ( !email || !code )
     {

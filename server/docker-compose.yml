@@ -1,15 +1,15 @@
 
 services:
-  server:
-    build: .
-    ports:
-      - "3000:3000"
-    environment:
-      - PORT=3000
-      - NODE_ENV=development
-    volumes:
-      - .:/app
-    command: ["npm", "run", "dev"]
+  # server:
+  #   build: .
+  #   ports:
+  #     - "3000:3000"
+  #   environment:
+  #     - PORT=3000
+  #     - NODE_ENV=development
+  #   volumes:
+  #     - .:/app
+  #   command: ["npm", "run", "dev"]
 
   redis:
     image: redis:7-alpine
@@ -23,11 +23,13 @@ services:
     image: mongo:7
     container_name: mongo-todo
     volumes:
-      - mongo-data:/data/db
+      - mongodb-data:/data/db
     ports:
       - "27017:27017"
 
 
 volumes:
   redis-data:
-  mongo-data:      
+    external: true
+  mongodb-data:     
+    external: true
