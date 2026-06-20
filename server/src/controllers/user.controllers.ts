@@ -6,12 +6,11 @@ import { ApiError } from "../utils/apierror.js";
 import { ApiResponse } from "../utils/apiresponse.js";
 import { asyncHandler } from "../utils/asynchandler.js";
 import { cloudinaryUpload } from "../utils/cloudinary.upload.js";
-import { sendVerifyEmailMail, forgotPasswordMail } from "../utils/mail.js";
 import jwt from "jsonwebtoken"
 import type { Secret, JwtPayload } from "jsonwebtoken"
 import { loginType } from "../constants.js";
 import { redis } from "../db/redis.db.js";
-import { emailQueue } from "../config/queue.config.js";
+import { emailQueue } from "../jobs/queue.jobs.js";
 
 const generateOtp = (): string =>
 {
@@ -89,7 +88,18 @@ const registerUser = asyncHandler( async ( req, res ) =>
     const otp: string = generateOtp()
     await redis.set( getOtpKey( email ), otp, "EX", 60 * 5 )
     const userName = `${ firstname } ${ lastname }`
-    await emailQueue.add( "verify-send",
+    const createdUser: IUser = await User.create( {
+        firstname,
+        lastname,
+        email,
+        password,
+        loginType: loginType.EMAIL_PASSWORD
+    } )
+    if ( !createdUser )
+    {
+        return res.json( new ApiError( 500, "User not created", [ "User not created" ] ) )
+    }
+    const job = await emailQueue.add( "verify-send",
         {
             email,
             userName,
@@ -105,17 +115,8 @@ const registerUser = asyncHandler( async ( req, res ) =>
             },
         }
     )
-    const createdUser: IUser = await User.create( {
-        firstname,
-        lastname,
-        email,
-        password,
-        loginType: loginType.EMAIL_PASSWORD
-    } )
-    if ( !createdUser )
-    {
-        return res.json( new ApiError( 500, "User not created", [ "User not created" ] ) )
-    }
+    console.log(job.id,job.data,job.name);
+    
     res.status( 201 )
         .json( new ApiResponse( 201, "User created successfully", [ "User created successfully, check your email to verify your account" ] ) )
 } )

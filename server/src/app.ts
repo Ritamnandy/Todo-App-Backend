@@ -7,7 +7,7 @@ import compression from "compression"
 import session from "express-session"
 import requestIp from "request-ip"
 import passport from "passport"
-
+import "./jobs/worker.jobs.js"
 const app = express()
 
 app.use( cors( {
