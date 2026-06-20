@@ -11,7 +11,7 @@ import jwt from "jsonwebtoken"
 import type { Secret, JwtPayload } from "jsonwebtoken"
 import { loginType } from "../constants.js";
 import { redis } from "../db/redis.db.js";
-
+import { emailQueue } from "../config/queue.config.js";
 
 const generateOtp = (): string =>
 {
@@ -89,7 +89,22 @@ const registerUser = asyncHandler( async ( req, res ) =>
     const otp: string = generateOtp()
     await redis.set( getOtpKey( email ), otp, "EX", 60 * 5 )
     const userName = `${ firstname } ${ lastname }`
-    await sendVerifyEmailMail( email, userName, otp )
+    await emailQueue.add( "verify-send",
+        {
+            email,
+            userName,
+            varificationCode: otp
+        },
+        {
+            removeOnComplete: true,
+            removeOnFail: true,
+            attempts: 3,
+            backoff: {
+                type: "exponential",
+                delay: 1000,
+            },
+        }
+    )
     const createdUser: IUser = await User.create( {
         firstname,
         lastname,
@@ -129,7 +144,21 @@ const resendVerificationCode = asyncHandler( async ( req, res ) =>
     const otp: string = generateOtp()
     await redis.set( getOtpKey( email ), otp, "EX", 60 * 5 )
     const userName = `${ user.firstname } ${ user.lastname }`
-    await sendVerifyEmailMail( email, userName, otp )
+    await emailQueue.add( "verify-send",
+        {
+            email,
+            userName,
+            varificationCode: otp
+
+        }, {
+        removeOnComplete: true,
+        removeOnFail: true,
+        attempts: 3,
+        backoff: {
+            type: "exponential",
+            delay: 1000,
+        },
+    } )
     await user.save( { validateBeforeSave: false } )
     res.status( 200 )
         .json( new ApiResponse( 200, "Email sent successfully", [ "Email sent successfully, check your email to verify your account" ] ) )
@@ -173,15 +202,16 @@ const verifyEmail = asyncHandler( async ( req, res ) =>
     {
         return res.json( new ApiError( 400, "Invalid code or code has expired", [ "Invalid code or code has expired" ] ) )
     }
-    await redis.del( getOtpKey( email ) )
     user.isVerified = true
     const { accessToken, refreshToken } = await generateTokenPair( user )
     await user.save( { validateBeforeSave: false } )
+
+    await redis.del( getOtpKey( email ) )
     if ( !accessToken || !refreshToken )
     {
         return res.json( new ApiError( 500, "Token not generated", [ "Token not generated" ] ) )
     }
-    const createdUser: IUser | null = await User.findById( user._id ).select( "-password -verificationCode -verificationCodeExpiry -refreshToken -googleId -isVerified" )
+    const createdUser: IUser | null = await User.findById( user._id ).select( "-password -verificationCode -verificationCodeExpiry -refreshToken -googleId " )
     if ( !createdUser )
     {
         return res.json( new ApiError( 404, "User not found", [ "User not found" ] ) )
@@ -335,7 +365,18 @@ const socialLogin = asyncHandler( async ( req, res ) =>
 } )
 
 
+// ++++++ getCurrent user ++++++++
 
+const getCurrentUser = asyncHandler( async ( req, res ) =>
+{
+    const user: IUser | null = req.user as IUser
+    if ( !user )
+    {
+        return res.json( new ApiError( 401, "Unauthorized request", [ "Unauthorized request,\tUser not found" ] ) )
+    }
+    res.status( 200 )
+        .json( new ApiResponse( 200, "User found successfully", [ "User found successfully", user ] ) )
+} )
 
 
 
@@ -377,5 +418,6 @@ export
     setAvatar,
     forgetPassword,
     refreshAccessToken,
-    socialLogin
+    socialLogin,
+    getCurrentUser
 }
