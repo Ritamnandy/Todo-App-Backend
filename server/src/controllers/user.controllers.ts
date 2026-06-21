@@ -389,12 +389,13 @@ const socialLogin = asyncHandler( async ( req, res ) =>
 const getCurrentUser = asyncHandler( async ( req, res ) =>
 {
     const user: IUser | null = req.user as IUser
-    if ( !user )
+    const findUser = await User.findById( user._id ).select( "-password -refreshToken -googleId" )
+    if ( !findUser )
     {
         return res.json( new ApiError( 401, "Unauthorized request", [ "Unauthorized request,\tUser not found" ] ) )
     }
     res.status( 200 )
-        .json( new ApiResponse( 200, "User found successfully", [ "User found successfully", user ] ) )
+        .json( new ApiResponse( 200, "User found successfully", [ "User found successfully", { user: findUser } ] ) )
 } )
 
 

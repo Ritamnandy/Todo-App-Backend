@@ -1,14 +1,18 @@
 
 import express from "express"
+import type { Request } from "express"
 import cors from "cors"
 import cookieParser from "cookie-parser"
-import rateLimit from "express-rate-limit"
+import rateLimit, { ipKeyGenerator } from "express-rate-limit"
 import compression from "compression"
 import session from "express-session"
 import requestIp from "request-ip"
 import passport from "passport"
 import "./jobs/worker.jobs.js"
 import "./passport/oauth.js"
+import { ApiError } from "./utils/apierror.js"
+
+
 const app = express()
 
 app.use( cors( {
@@ -33,6 +37,19 @@ app.use( session( {
 
 app.use( passport.initialize() )
 app.use( passport.session() )
+const limiter = rateLimit( {
+    windowMs: 5 * 60 * 1000, // 5 minutes
+    max: 100, // limit each IP to 100 requests per windowMs
+    standardHeaders: true,
+    // use a loose type for req because request-ip augments the request with `clientIp`
+    keyGenerator: ( req: Request ) =>
+    {
+        return ipKeyGenerator( req.clientIp ?? req.ip as string )
+    },
+    handler: ( req, res ) => res.status( 429 ).json( new ApiError( 429, "Too many requests", [ "Too many requests" ] ) ) // return rate limit info in the `RateLimit-*` headers
+} )
+
+app.use( limiter )
 
 
 import userRoute from "./routes/user.routes.js"
