@@ -4,18 +4,23 @@ import type { Document, Types } from "mongoose"
 
 export interface ITodo extends Document
 {
-    content: string
+    title: string
+    color:string
     isCompleted: boolean
     createdBy: Types.ObjectId
-    subTodos: Types.ObjectId[]
 }
 
 const todoSchema = new mongoose.Schema<ITodo>(
     {
-        content: {
+        title: {
             type: String,
             required: true,
             trim: true,
+        },
+        color: {
+            type: String,
+            trim: true,
+            default: "#000000"
         },
         isCompleted: {
             type: Boolean,
@@ -24,13 +29,7 @@ const todoSchema = new mongoose.Schema<ITodo>(
         createdBy: {
             type: mongoose.Schema.Types.ObjectId,
             ref: "User"
-        },
-        subTodos: [
-            {
-                type: mongoose.Schema.Types.ObjectId,
-                ref: "SubTodo"
-            }
-        ]
+        }
 
     },
     {
