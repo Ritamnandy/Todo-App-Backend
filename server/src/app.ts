@@ -54,6 +54,10 @@ app.use( limiter )
 
 import userRoute from "./routes/user.routes.js"
 
+import todoRoute from "./routes/todo.routes.js"
+
+app.use( "/api/v1/todos", todoRoute )
+
 app.use( "/api/v1/auth", userRoute )
 
 

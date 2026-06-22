@@ -1,4 +1,5 @@
 
+import mongoose from "mongoose";
 import type { Request, Response } from "express";
 import { User } from "../models/user.models.js";
 import type { IUser } from "../models/user.models.js";
@@ -11,6 +12,7 @@ import type { Secret, JwtPayload } from "jsonwebtoken"
 import { loginType } from "../constants.js";
 import { redis } from "../db/redis.db.js";
 import { emailQueue } from "../jobs/queue.jobs.js";
+import { key } from "../constants.js";
 
 const generateOtp = (): string =>
 {
@@ -400,7 +402,69 @@ const getCurrentUser = asyncHandler( async ( req, res ) =>
 
 
 
+//++++ get all  todos ++++
 
+const getAllTodo = asyncHandler( async ( req, res ) =>
+{
+    const user: IUser | null = req.user as IUser
+    if ( !user )
+    {
+        return res.status( 401 ).json( new ApiError( 401, "Unauthorized request", [ "User not found" ] ) )
+    }
+    const todos = await User.aggregate( [
+        {
+            $match: {
+                _id: new mongoose.Types.ObjectId( user._id )
+            }
+        },
+        {
+            $lookup: {
+                from: "todos",
+                localField: "_id",
+                foreignField: "createdBy",
+                as: "todo",
+                pipeline: [
+                    {
+                        $lookup: {
+                            from: "subtodos",
+                            localField: "_id",
+                            foreignField: "todo",
+                            as: "subtodo",
+                            pipeline: [
+                                {
+                                    $project: {
+                                        _id: 1,
+                                        content: 1,
+                                        isCompleted: 1
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    {
+                        $project: {
+                            _id: 1,
+                            subtodo: 1,
+                            title: 1,
+                            color: 1,
+                            isCompleted: 1
+                        }
+                    }
+                ]
+            }
+        },
+        {
+            $project: {
+                _id: 1, todo: 1
+            }
+        }
+    ] )
+    if ( !todos )
+    {
+        return res.status( 404 ).json( new ApiError( 404, "Todo not found", [ "Todo not found" ] ) )
+    }
+    return res.status( 200 ).json( new ApiResponse( 200, "Todo found successfully", [ "Todo found successfully", { todos: todos } ] ) )
+} )
 
 
 
@@ -439,5 +503,6 @@ export
     forgetPassword,
     refreshAccessToken,
     socialLogin,
-    getCurrentUser
+    getCurrentUser,
+    getAllTodo
 }

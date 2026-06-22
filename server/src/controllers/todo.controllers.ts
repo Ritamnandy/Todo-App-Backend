@@ -43,7 +43,7 @@ const updateTodoTitle = asyncHandler( async ( req, res ) =>
 {
     const todoId: string = req.params.id as string
     const { title, color } = req.body as ITodo
-    if ( !todoId || todoId === "" )
+    if ( !todoId && todoId === "" )
     {
         return res.status( 400 ).json( new ApiError( 400, "Todo id is required", [ "Todo id is required" ] ) )
     }
@@ -166,12 +166,14 @@ const updateSubTodo = asyncHandler( async ( req, res ) =>
 const completeSubTodo = asyncHandler( async ( req, res ) =>
 {
     const subTodId: string = req.params.id as string
-    const { isCompleted } = req.body
-    if ( !isCompleted || isCompleted === "" )
+    const { isCompleted } = req.body as {
+        isCompleted: boolean;
+    };
+    if ( !isCompleted )
     {
         return res.status( 400 ).json( new ApiError( 400, "isCompleted is required", [ "isCompleted is required" ] ) )
     }
-    const updatedSubTodo: ISubTodo | null = await SubTodo.findOneAndUpdate( { _id: subTodId }, { isCompleted } )
+    const updatedSubTodo: ISubTodo | null = await SubTodo.findOneAndUpdate( { _id: subTodId }, {  isCompleted  } )
     if ( !updatedSubTodo )
     {
         return res.status( 404 ).json( new ApiError( 404, "Sub todo not found", [ "Sub todo not found" ] ) )
@@ -195,12 +197,7 @@ const deleteSubTodo = asyncHandler( async ( req, res ) =>
 } )
 
 
-// get all  todos
 
-const getAllTodo = asyncHandler( async ( req, res ) =>
-{
-    res.send( "get all todos" )
-} )
 
 
 export
@@ -213,5 +210,4 @@ export
     updateSubTodo,
     completeSubTodo,
     deleteSubTodo,
-    getAllTodo
 }

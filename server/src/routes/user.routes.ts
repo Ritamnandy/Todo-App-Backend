@@ -15,7 +15,8 @@ import
     forgetPassword,
     refreshAccessToken,
     socialLogin,
-    getCurrentUser
+    getCurrentUser,
+    getAllTodo
 } from "../controllers/user.controllers.js"
 import { upload } from "../middlewares/multer.middlewares.js";
 import passport from "passport";
@@ -58,6 +59,6 @@ router.route( "/forget-password" ).post( forgetPassword )
 router.route( "/logout" ).post( verifyJWT, logoutUser )
 router.route( "/set-avatar" ).post( verifyJWT, upload.single( "avatar" ), setAvatar )
 router.route( "/current-user" ).get( verifyJWT, getCurrentUser )
-
+router.route( "/get-all-todo" ).get( verifyJWT, getAllTodo )
 
 export default router

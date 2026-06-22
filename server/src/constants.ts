@@ -7,5 +7,7 @@ enum loginType
 
 const db_Name = "Todo_App"
 
+const key = "AllTodos"
 
-export { loginType, db_Name }
+
+export { loginType, db_Name,key }
