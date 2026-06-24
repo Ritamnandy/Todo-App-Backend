@@ -124,15 +124,15 @@ cp server/.env.sample server/.env
 Then update `server/.env` with your local values:
 
 ```env
-PORT=5000
-CORS_ORIGIN=http://localhost:3000
+PORT=your_port_number
+CORS_ORIGIN=your_frontend_url
 SESSION_SECRET=your_session_secret
 
-MONGODB_URL=mongodb://localhost:27017
+MONGODB_URL=your_mongodb_connection_string
 
-REDIS_URL=redis://localhost:6379
-REDIS_HOST=localhost
-REDIS_PORT=6379
+REDIS_URL=your_redis_connection_string
+REDIS_HOST=your_redis_host
+REDIS_PORT=your_redis_port
 
 JWT_TOKEN_SECRET=your_access_token_secret
 JWT_TOKEN_EXPIRES_IN=1d
@@ -148,7 +148,7 @@ CLOUDINARY_API_SECRET=your_cloudinary_api_secret
 
 GOOGLE_CLIENT_ID=your_google_client_id
 GOOGLE_CLIENT_SECRET=your_google_client_secret
-GOOGLE_CALLBACK_URL=http://localhost:5000/api/v1/auth/google/callback
+GOOGLE_CALLBACK_URL=your_google_oauth_callback_url
 ```
 
 ## Installation
