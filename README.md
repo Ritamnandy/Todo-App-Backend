@@ -19,7 +19,9 @@ A TypeScript, Express, MongoDB, and Redis backend for a Todo application. It sup
 
 ```text
 .
+├── README.md
 └── server
+    ├── API_DOCS.md
     ├── Dockerfile
     ├── docker-compose.yml
     ├── package.json
@@ -77,6 +79,7 @@ A TypeScript, Express, MongoDB, and Redis backend for a Todo application. It sup
 - `src/routes`: API route definitions.
 - `src/utils`: Shared helpers for responses, errors, async handlers, mail, and Cloudinary uploads.
 - `src/validators`: Request validation rules and validation error middleware.
+- `server/API_DOCS.md`: Detailed API endpoint documentation.
 
 ## Main Features
 
@@ -102,6 +105,13 @@ A TypeScript, Express, MongoDB, and Redis backend for a Todo application. It sup
 - Gmail app password or another Gmail-compatible app password setup
 - Cloudinary account
 - Google OAuth credentials, if Google login is enabled
+
+## Clone Repository
+
+```bash
+git clone https://github.com/Ritamnandy/Todo-App-Backend.git
+cd Todo-App-Backend
+```
 
 ## Environment Variables
 
@@ -205,7 +215,7 @@ Auth:  /api/v1/auth
 Todos: /api/v1/todos
 ```
 
-See [API_DOCS.md](./API_DOCS.md) for full endpoint documentation.
+See [API_DOCS.md](./server/API_DOCS.md) for full endpoint documentation.
 
 ## Authentication
 
