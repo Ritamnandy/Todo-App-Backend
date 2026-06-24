@@ -115,7 +115,13 @@ cd Todo-App-Backend
 
 ## Environment Variables
 
-Create `server/.env`:
+Copy the sample environment file:
+
+```bash
+cp server/.env.sample server/.env
+```
+
+Then update `server/.env` with your local values:
 
 ```env
 PORT=5000
